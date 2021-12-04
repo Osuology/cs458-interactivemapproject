@@ -6,13 +6,15 @@ using UnityEngine.Tilemaps;
 
 public class ExportButton : MonoBehaviour
 {
-    public Button button;
-    public Tilemap tilemap;
+    Button button;
+    Tilemap tilemap;
 
     private MapDataExporter dataExporter;
 
     void Start()
     {
+        button = GameObject.Find("ExportButton").GetComponent<Button>();
+        tilemap = GameObject.Find("Floor0").GetComponent<Tilemap>();
         dataExporter = new MapDataExporter();
 
         button.onClick.AddListener(() => ExportMap(tilemap));

@@ -33,6 +33,7 @@ public class MapDataExporter
                     {
                         Debug.Log(sprite.name);
                         Debug.Log($"Sprite Name: {sprite.name}");
+                        Debug.Log($"Position: {pos}");
                         Debug.Log($"ID: {(x-bounds.xMin)+((y-bounds.yMin)*size.y)+((z-bounds.zMin)*size.z)}");
                         MapData.TileData tileData = new MapData.TileData("mapTile", id, TilesResourceLoader.GetID(sprite.name), new int[] { x, y, z });
                         baseLayer.Add(tileData);
