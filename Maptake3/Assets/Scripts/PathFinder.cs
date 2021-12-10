@@ -7,14 +7,31 @@ public class PathFinder
 {
     private Tilemap tilemap;
 
-    private Queue<Vector3Int> queue = new Queue<Vector3Int>();
-
     private struct PathFindData
     {
-        Queue<Vector3Int> queue;
-        List<Vector3Int> path;
-        string status;
+        public List<Vector3Int> path;
+        public string status;
+        public Vector3Int target;
+
+        public PathFindData(Vector3Int _target)
+        {
+            path = new List<Vector3Int>();
+            status = "Valid";
+            target = _target;
+        }
+
+        public void Add(Vector3Int addition)
+        {
+            path.Add(addition);
+        }
+
+        public Vector3Int Last()
+        {
+            return path[path.Count-1];
+        }
     }
+    private Queue<PathFindData> queue = new Queue<PathFindData>();
+    private Dictionary<Vector3Int, bool> visited = new Dictionary<Vector3Int, bool>();
 
     public PathFinder()
     {
@@ -23,61 +40,146 @@ public class PathFinder
 
     public List<Vector3Int> PathFind(Vector3Int start, Vector3Int target)
     {
-        List<Vector3Int> path = new List<Vector3Int>() {start};
-        Queue<Vector3Int> right = RecurseFindQueue(start.x+1, start.y, start.z), left = RecurseFindQueue(start.x-1, start.y, start.z),
-                              up = RecurseFindQueue(start.x, start.y+1, start.z), down = RecurseFindQueue(start.x, start.y-1, start.z);
+        var startTile = tilemap.GetSprite(start).name;
+        var targetTile = tilemap.GetSprite(target).name;
+        Debug.Log("");
+        Debug.Log($"Start: {startTile}, Target: {targetTile}");
+        Debug.Log("");
+        if (!targetTile.StartsWith("road_grass") && targetTile != "Bitumen")
+        {
+            Debug.Log("Final target is unreachable!!");
+        }
+        PathFindData startPath = new PathFindData(target);
+        startPath.Add(start);
+        startPath.status = "Start";
+        queue.Enqueue(startPath);
 
-        if (right.status == "finish")
+        while (queue.Count > 0)
         {
-            path = right.path;
-            return path;
-        }
-        else if (left.status == "finish")
-        {
-            path = left.path;
-            return path;
-        }
-        else if (up.status == "finish")
-        {
-            path = up.path;
-            return path;
-        }
-        else if (down.status == "finish")
-        {
-            path = down.path;
-            return path;
-        }
-        else
-        {
-            if (!queue.Contains(right) && tilemap.GetSprite(right).name == "road_grass(33)" || tilemap.GetSprite(right).name == "road_grass(34)" || tilemap.GetSprite(right).name == "road_grass(36)")
+            PathFindData current = queue.Dequeue();
+
+            PathFindData right = RecurseFindQueue(current, "right");
+            if (right.status == "Target")
+            {
+                return right.path;
+            }
+            else if (right.status == "Valid")
             {
                 queue.Enqueue(right);
             }
-            if (!queue.Contains(left) && tilemap.GetSprite(left).name == "road_grass(33)" || tilemap.GetSprite(left).name == "road_grass(34)" || tilemap.GetSprite(left).name == "road_grass(36)")
+
+            PathFindData left = RecurseFindQueue(current, "left");
+            if (left.status == "Target")
+            {
+                return left.path;
+            }
+            else if (left.status == "Valid")
             {
                 queue.Enqueue(left);
             }
-            if (!queue.Contains(up) && tilemap.GetSprite(up).name == "road_grass(33)" || tilemap.GetSprite(up).name == "road_grass(34)" || tilemap.GetSprite(up).name == "road_grass(36)")
+
+            PathFindData up = RecurseFindQueue(current, "up");
+            if (up.status == "Target")
+            {
+                return up.path;
+            }
+            else if (up.status == "Valid")
             {
                 queue.Enqueue(up);
+                Debug.Log("Queueing Up Path!");
             }
-            if (!queue.Contains(down) && tilemap.GetSprite(down).name == "road_grass(33)" || tilemap.GetSprite(down).name == "road_grass(34)" || tilemap.GetSprite(down).name == "road_grass(36)")
+
+            PathFindData down = RecurseFindQueue(current, "down");
+            if (down.status == "Target")
+            {
+                return down.path;
+            }
+            else if (down.status == "Valid")
             {
                 queue.Enqueue(down);
             }
-
-            return RecursePathFind(target);
         }
 
+        Debug.Log("No valid Path Found!");
+        return null;
+
     }
 
-    private PathFindData RecurseFindQueue(int x, int y, int z)
+    private PathFindData RecurseFindQueue(PathFindData current, string direction)
     {
-        Vector3Int start = new Vector3Int(x, y, z);
+        List<Vector3Int> newPath = current.path;
+        Vector3Int lastPos = newPath[newPath.Count-1];
+        switch (direction)
+        {
+            case "right":
+                Debug.Log("right");
+                PathFindData rightPathFindData = current;
+                rightPathFindData.Add(new Vector3Int(lastPos.x+1, lastPos.y, lastPos.z));
+                rightPathFindData.status = FindLocationStatus(rightPathFindData);
+                if (rightPathFindData.status == "Valid")
+                {
+                    visited.Add(rightPathFindData.Last(), true);
+                }
+                return rightPathFindData;
+            case "left":
+                Debug.Log("left");
+                PathFindData leftPathFindData = current;
+                leftPathFindData.Add(new Vector3Int(lastPos.x-1, lastPos.y, lastPos.z));
+                leftPathFindData.status = FindLocationStatus(leftPathFindData);
+                if (leftPathFindData.status == "Valid")
+                {
+                    visited.Add(leftPathFindData.Last(), true);
+                }
+                return leftPathFindData;
+            case "up":
+                Debug.Log("up");
+                PathFindData upPathFindData = current;
+                upPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y+1, lastPos.z));
+                upPathFindData.status = FindLocationStatus(upPathFindData);
+                if (upPathFindData.status == "Valid")
+                {
+                    visited.Add(upPathFindData.Last(), true);
+                }
+                Debug.Log(upPathFindData.status);
+                return upPathFindData;
+            default:
+                Debug.Log("down");
+                PathFindData downPathFindData = current;
+                downPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y-1, lastPos.z));
+                downPathFindData.status = FindLocationStatus(downPathFindData);
+                if (downPathFindData.status == "Valid")
+                {
+                    visited.Add(downPathFindData.Last(), true);
+                }
+                return downPathFindData;
+        }
     }
 
-    private List<Vector3Int> RecursePathFind(Vector3Int target)
+    private string FindLocationStatus(PathFindData pathFind)
     {
-        Vector3Int current = queue.Dequeue();
+        Vector3Int pos = pathFind.Last();
+        Vector3Int target = pathFind.target;
+
+        Debug.Log($"Current: {pos.ToString()}, Target: {target}");
+
+        var tileName = tilemap.GetSprite(pos).name;
+
+        if (pos == target)
+        {
+            return "Target";
+        }
+        else if (visited.ContainsKey(pos))
+        {
+            return "Visited";
+        }
+        else if (tileName.StartsWith("road_grass") || tileName == "Bitumen")
+        {
+            return "Valid";
+        }
+        else
+        {
+            Debug.Log($"Tile is invalid: {tilemap.GetSprite(pos).name}");
+            return "Invalid";
+        }
     }
 }
