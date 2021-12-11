@@ -9,7 +9,7 @@ public class PathGrid : MonoBehaviour
     private MapDataLoader mapDataLoader;
     private PathFinder pathFinder;
 
-    private Vector3Int from = new Vector3Int(0, 0, 0), to = new Vector3Int(0, 5, 0);
+    private Vector3Int from = new Vector3Int(0, 0, 0), to = new Vector3Int(-7, -4, 0);
 
     private List<MapData.TileData> GetPathTileData()
     {
@@ -75,12 +75,6 @@ public class PathGrid : MonoBehaviour
         tileData = GetPathTileData();
         pathFinder = new PathFinder();
         SetupPath();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     private void SetupPath()

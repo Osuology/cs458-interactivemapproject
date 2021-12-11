@@ -7,7 +7,7 @@ public class PathFinder
 {
     private Tilemap tilemap;
 
-    private struct PathFindData
+    private class PathFindData
     {
         public List<Vector3Int> path;
         public string status;
@@ -20,6 +20,15 @@ public class PathFinder
             target = _target;
         }
 
+        // Necessary for fixing Lists using pointers to store their data
+        public void ClonePath(List<Vector3Int> list)
+        {
+            foreach (var pos in list)
+            {
+                path.Add(pos);
+            }
+        }
+
         public void Add(Vector3Int addition)
         {
             path.Add(addition);
@@ -30,7 +39,7 @@ public class PathFinder
             return path[path.Count-1];
         }
     }
-    private Queue<PathFindData> queue = new Queue<PathFindData>();
+    private List<PathFindData> queue = new List<PathFindData>();
     private Dictionary<Vector3Int, bool> visited = new Dictionary<Vector3Int, bool>();
 
     public PathFinder()
@@ -47,16 +56,16 @@ public class PathFinder
         Debug.Log("");
         if (!targetTile.StartsWith("road_grass") && targetTile != "Bitumen")
         {
-            Debug.Log("Final target is unreachable!!");
+            Debug.Log($"Final target ({targetTile}) is unreachable!!");
         }
         PathFindData startPath = new PathFindData(target);
         startPath.Add(start);
         startPath.status = "Start";
-        queue.Enqueue(startPath);
+        queue.Add(startPath);
 
         while (queue.Count > 0)
         {
-            PathFindData current = queue.Dequeue();
+            PathFindData current = queue[0];
 
             PathFindData right = RecurseFindQueue(current, "right");
             if (right.status == "Target")
@@ -65,18 +74,24 @@ public class PathFinder
             }
             else if (right.status == "Valid")
             {
-                queue.Enqueue(right);
+                queue.Add(right);
+                Debug.Log("Queueing Right Path!");
             }
 
+            Debug.Log($"Current.Last = {current.Last()}");
             PathFindData left = RecurseFindQueue(current, "left");
+            Debug.Log($"Current.Last = {current.Last()}");
             if (left.status == "Target")
             {
                 return left.path;
             }
             else if (left.status == "Valid")
             {
-                queue.Enqueue(left);
+                queue.Add(left);
+                Debug.Log("Queueing Left Path!");
             }
+
+            Debug.Log($"Current.Last = {current.Last()}");
 
             PathFindData up = RecurseFindQueue(current, "up");
             if (up.status == "Target")
@@ -85,7 +100,7 @@ public class PathFinder
             }
             else if (up.status == "Valid")
             {
-                queue.Enqueue(up);
+                queue.Add(up);
                 Debug.Log("Queueing Up Path!");
             }
 
@@ -96,8 +111,11 @@ public class PathFinder
             }
             else if (down.status == "Valid")
             {
-                queue.Enqueue(down);
+                queue.Add(down);
+                Debug.Log("Queueing Down Path!");
             }
+
+            queue.RemoveAt(0);
         }
 
         Debug.Log("No valid Path Found!");
@@ -107,51 +125,68 @@ public class PathFinder
 
     private PathFindData RecurseFindQueue(PathFindData current, string direction)
     {
-        List<Vector3Int> newPath = current.path;
-        Vector3Int lastPos = newPath[newPath.Count-1];
-        switch (direction)
+        Vector3Int lastPos = current.Last();
+        Debug.Log($"NEW ADD: RecurseFindQueue lastPos: {lastPos}");
+        PathFindData currentClone = new PathFindData(current.target);
+        currentClone.ClonePath(current.path);
+        currentClone.status = current.status;
+        if (lastPos.x >= 100 || lastPos.y >= 100)
         {
-            case "right":
-                Debug.Log("right");
-                PathFindData rightPathFindData = current;
-                rightPathFindData.Add(new Vector3Int(lastPos.x+1, lastPos.y, lastPos.z));
-                rightPathFindData.status = FindLocationStatus(rightPathFindData);
-                if (rightPathFindData.status == "Valid")
-                {
-                    visited.Add(rightPathFindData.Last(), true);
-                }
-                return rightPathFindData;
-            case "left":
-                Debug.Log("left");
-                PathFindData leftPathFindData = current;
-                leftPathFindData.Add(new Vector3Int(lastPos.x-1, lastPos.y, lastPos.z));
-                leftPathFindData.status = FindLocationStatus(leftPathFindData);
-                if (leftPathFindData.status == "Valid")
-                {
-                    visited.Add(leftPathFindData.Last(), true);
-                }
-                return leftPathFindData;
-            case "up":
-                Debug.Log("up");
-                PathFindData upPathFindData = current;
-                upPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y+1, lastPos.z));
-                upPathFindData.status = FindLocationStatus(upPathFindData);
-                if (upPathFindData.status == "Valid")
-                {
-                    visited.Add(upPathFindData.Last(), true);
-                }
-                Debug.Log(upPathFindData.status);
-                return upPathFindData;
-            default:
-                Debug.Log("down");
-                PathFindData downPathFindData = current;
-                downPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y-1, lastPos.z));
-                downPathFindData.status = FindLocationStatus(downPathFindData);
-                if (downPathFindData.status == "Valid")
-                {
-                    visited.Add(downPathFindData.Last(), true);
-                }
-                return downPathFindData;
+            PathFindData invalidPathFindData = currentClone;
+            invalidPathFindData.status = "Invalid";
+
+            return invalidPathFindData;
+        }
+        else {
+            switch (direction)
+            {
+                case "right":
+                    Debug.Log("right");
+                    PathFindData rightPathFindData = currentClone;
+                    rightPathFindData.Add(new Vector3Int(lastPos.x+1, lastPos.y, lastPos.z));
+                    rightPathFindData.status = FindLocationStatus(rightPathFindData);
+                    if (rightPathFindData.status == "Valid")
+                    {
+                        visited.Add(rightPathFindData.Last(), true);
+                    }
+                    return rightPathFindData;
+                case "left":
+                    Debug.Log("left");
+                    PathFindData leftPathFindData = currentClone;
+                    Debug.Log($"NEW ADD 2: RecurseFindQueue lastPos: {current.Last()}");
+                    leftPathFindData.Add(new Vector3Int(lastPos.x-1, lastPos.y, lastPos.z));
+                    Debug.Log($"NEW ADD 3: RecurseFindQueue lastPos: {current.Last()}");
+                    Debug.Log($"NEW ADD 5: RecurseFindQueue lastPos: {leftPathFindData.Last()}");
+                    Debug.Log($"lastPos: {lastPos}  |  Last: {leftPathFindData.Last()}");
+                    Debug.Log($"Path: {leftPathFindData.path}");
+                    leftPathFindData.status = FindLocationStatus(leftPathFindData);
+                    if (leftPathFindData.status == "Valid")
+                    {
+                        visited.Add(leftPathFindData.Last(), true);
+                    }
+                    return leftPathFindData;
+                case "up":
+                    Debug.Log("up");
+                    PathFindData upPathFindData = currentClone;
+                    upPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y+1, lastPos.z));
+                    upPathFindData.status = FindLocationStatus(upPathFindData);
+                    if (upPathFindData.status == "Valid")
+                    {
+                        visited.Add(upPathFindData.Last(), true);
+                    }
+                    Debug.Log(upPathFindData.status);
+                    return upPathFindData;
+                default:
+                    Debug.Log("down");
+                    PathFindData downPathFindData = currentClone;
+                    downPathFindData.Add(new Vector3Int(lastPos.x, lastPos.y-1, lastPos.z));
+                    downPathFindData.status = FindLocationStatus(downPathFindData);
+                    if (downPathFindData.status == "Valid")
+                    {
+                        visited.Add(downPathFindData.Last(), true);
+                    }
+                    return downPathFindData;
+            }
         }
     }
 
