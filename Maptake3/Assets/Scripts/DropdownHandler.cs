@@ -6,9 +6,6 @@ using UnityEngine.UI;
 public class DropdownHandler : MonoBehaviour
 {
 
-    public Text TextBox;
-
-    // Start is called before the first frame update
     void Start()
     {
        var dropdown = transform.GetComponent<Dropdown>();
@@ -36,9 +33,7 @@ public class DropdownHandler : MonoBehaviour
     void DropdownItemSelected(Dropdown dropdown)
     {
         int index = dropdown.value;
-
-        TextBox.text = dropdown.options[index].text;
     }
 
-   
+
 }
