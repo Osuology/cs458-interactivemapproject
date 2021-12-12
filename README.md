@@ -1,5 +1,5 @@
 # cs458-project
-CS 458 Project - Farming Game
+CS 458 Project - Interactive Map ACCESSIBLE HERE: https://simmer.io/@Osuology/humboldt-university-campus-interactive-map
 
 ## How to use GIT CLI (command line interface) with this repository
 First use ``git clone https://github.com/Osuology/cs458-project`` to clone the project. If you've already cloned it, you can use ``git pull`` to update.
